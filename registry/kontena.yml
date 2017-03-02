@@ -9,11 +9,10 @@ services:
 
   elasticsearch:
     stateful: true
-    # image: terranodo/elasticsearch
-    image: elasticsearch:1.7
+    image: terranodo/elasticsearch
     environment:
       KONTENA_LB_INTERNAL_PORT: 9200
-      KONTENA_LB_VIRTUAL_PATH: /elastic
+      KONTENA_LB_VIRTUAL_PATH: /elastic/
     external_links:
       - loadbalancer-loadbalancer
 
@@ -21,8 +20,8 @@ services:
     instances: 3
     image: ninjalikeme/registry
     environment:
-      REGISTRY_SEARCH_URL: http://elasticsearch:9200/
-      REGISTRY_DATABASE_URL: postgres://postgres:postgres@postgres:5432/postgres
+      REGISTRY_SEARCH_URL: http://${project}-elasticsearch:9200/
+      REGISTRY_DATABASE_URL: postgres://postgres:postgres@${project}-postgres:5432/postgres
       KONTENA_LB_INTERNAL_PORT: 8000
       KONTENA_LB_VIRTUAL_PATH: /registry/
     command: 'python registry.py runserver 0.0.0.0:8000'
@@ -30,7 +29,7 @@ services:
       - loadbalancer-loadbalancer
 
   maploom:
-    image: 'ninjalikeme/maploom:production'
+    image: 'ninjalikeme/maploom:kontena'
     command: 'grunt serve'
     environment:
       KONTENA_LB_INTERNAL_PORT: 3000
