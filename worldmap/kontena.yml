@@ -1,0 +1,57 @@
+stack: wayner/worldmap
+version: 0.1.1
+services:
+
+  postgres:
+    image: terranodo/postgis
+  rabbitmq:
+     image: rabbitmq
+  elasticsearch:
+    image: elasticsearch
+    external_links:
+      - loadbalancer-loadbalancer
+    environment:
+      - KONTENA_LB_MODE=http
+      - KONTENA_LB_INTERNAL_PORT=9200
+      - KONTENA_LB_VIRTUAL_PATH=/elastic
+  geoserver:
+   image: piensalabs/geoserver:konten
+   links:
+     - postgres
+   external_links:
+      - loadbalancer-loadbalancer
+   environment:
+     - DJANGO_URL=http://django:8000/
+     - GEOSERVER_PUBLIC_LOCATION=http://54.202.70.26/geoserver/
+     - GEOSERVER_LOCATION=http://geoserver:8080/geoserver/
+     - SITEURL=http://54.202.70.26/django/
+     - KONTENA_LB_MODE=http
+     - KONTENA_LB_INTERNAL_PORT=8080
+     - KONTENA_LB_VIRTUAL_PATH=/geoserver
+  django:
+    image: piensalabs/worldmap:docker
+    external_links:
+      - loadbalancer-loadbalancer
+    links:
+      - postgres
+      - elasticsearch
+      - rabbitmq
+      - geoserver
+    command: django-admin.py runserver 0.0.0.0:8000 --settings=worldmap.settings
+    environment:
+      - DATABASE_URL=postgis://postgres:postgres@postgres:5432/postgres
+      - DATASTORE_URL=postgis://postgres:postgres@postgres:5432/postgres
+      - BROKER_URL=amqp://guest:guest@rabbitmq:5672/
+      - DJANGO_SETTINGS_MODULE=worldmap.settings
+      - ALLOWED_HOSTS=['django', '54.202.70.26/django']
+      - C_FORCE_ROOT=1
+      - DEBUG=True
+      - GEOSERVER_PUBLIC_LOCATION=http://worldmap.cientifi.co/geoserver/
+      - GEOSERVER_LOCATION=http://54.202.70.26/geoserver/
+      - GEOSERVER_BASE_URL=http://54.202.70.26/geoserver/
+      - SITEURL=http://54.202.70.26/django/
+      - GEONODE_CLIENT_LOCATION=/static/worldmap_client/
+      - KONTENA_LB_MODE=http
+      - KONTENA_LB_INTERNAL_PORT=8000
+      - KONTENA_LB_VIRTUAL_PATH=/django
+
