@@ -1,0 +1,9 @@
+---
+version: '2'
+name: loadbalancer
+services:
+  loadbalancer:
+    image: kontena/lb:latest
+    ports:
+      - 80:80
+      - 443:443

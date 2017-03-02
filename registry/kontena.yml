@@ -1,0 +1,40 @@
+---
+version: '2'
+name: registry
+
+services: 
+  postgres:
+    stateful: true
+    image: mdillon/postgis:9.5
+
+  elasticsearch:
+    stateful: true
+    # image: terranodo/elasticsearch
+    image: elasticsearch:1.7
+    environment:
+      KONTENA_LB_INTERNAL_PORT: 9200
+      KONTENA_LB_VIRTUAL_PATH: /elastic
+    external_links:
+      - loadbalancer-loadbalancer
+
+  registry:
+    instances: 3
+    image: ninjalikeme/registry
+    environment:
+      REGISTRY_SEARCH_URL: http://elasticsearch:9200/
+      REGISTRY_DATABASE_URL: postgres://postgres:postgres@postgres:5432/postgres
+      KONTENA_LB_INTERNAL_PORT: 8000
+      KONTENA_LB_VIRTUAL_PATH: /registry/
+    command: 'python registry.py runserver 0.0.0.0:8000'
+    external_links:
+      - loadbalancer-loadbalancer
+
+  maploom:
+    image: 'ninjalikeme/maploom:production'
+    command: 'grunt serve'
+    environment:
+      KONTENA_LB_INTERNAL_PORT: 3000
+      KONTENA_LB_VIRTUAL_PATH: /_maploom/
+    external_links:
+      - loadbalancer-loadbalancer
+
