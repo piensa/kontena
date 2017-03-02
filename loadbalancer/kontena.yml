@@ -4,6 +4,8 @@ name: loadbalancer
 services:
   loadbalancer:
     image: kontena/lb:latest
+    environment:
+      KONTENA_LB_VIRTUAL_HOSTS: jurgen.cientifi.co
     ports:
       - 80:80
       - 443:443
