@@ -2,19 +2,33 @@
 version: '2'
 name: registry
 
-services: 
+services:
+  loadbalancer:
+    image: kontena/lb:latest
+    environment:
+      KONTENA_LB_VIRTUAL_HOSTS: registry.cientifi.co
+    ports:
+      - 80:80
+      - 443:443
+    affinity:
+      - node==bitter-thunder-58
+
   postgres:
     stateful: true
     image: mdillon/postgis:9.5
+    affinity:
+      - node==bitter-thunder-58
 
   elasticsearch:
     stateful: true
     image: terranodo/elasticsearch
     environment:
       KONTENA_LB_INTERNAL_PORT: 9200
-      KONTENA_LB_VIRTUAL_PATH: /elastic/
-    external_links:
-      - loadbalancer-loadbalancer
+      KONTENA_LB_VIRTUAL_PATH: /_elastic/
+    links:
+      - loadbalancer
+    affinity:
+      - node==bitter-thunder-58
 
   registry:
     instances: 3
@@ -23,10 +37,23 @@ services:
       REGISTRY_SEARCH_URL: http://${project}-elasticsearch:9200/
       REGISTRY_DATABASE_URL: postgres://postgres:postgres@${project}-postgres:5432/postgres
       KONTENA_LB_INTERNAL_PORT: 8000
-      KONTENA_LB_VIRTUAL_PATH: /registry/
+      KONTENA_LB_VIRTUAL_PATH: /
     command: 'python registry.py runserver 0.0.0.0:8000'
-    external_links:
-      - loadbalancer-loadbalancer
+    links:
+      - loadbalancer
+    affinity:
+      - node==bitter-thunder-58
+
+  angular:
+    image: 'ninjalikeme/angular-search:kontena'
+    command: 'npm run server'
+    environment:
+      KONTENA_LB_INTERNAL_PORT: 3001
+      KONTENA_LB_VIRTUAL_PATH: /_angular/
+    links:
+      - loadbalancer
+    affinity:
+      - node==bitter-thunder-58
 
   maploom:
     image: 'ninjalikeme/maploom:kontena'
@@ -34,6 +61,7 @@ services:
     environment:
       KONTENA_LB_INTERNAL_PORT: 3000
       KONTENA_LB_VIRTUAL_PATH: /_maploom/
-    external_links:
-      - loadbalancer-loadbalancer
-
+    links:
+      - loadbalancer
+    affinity:
+      - node==bitter-thunder-58    
