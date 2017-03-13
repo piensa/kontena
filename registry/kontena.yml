@@ -6,27 +6,36 @@ services:
   loadbalancer:
     image: kontena/lb:latest
     environment:
-      KONTENA_LB_VIRTUAL_HOSTS: registry.cientifi.co
+      KONTENA_LB_VIRTUAL_HOSTS: registry.terranodo.io
     ports:
       - 80:80
       - 443:443
     affinity:
       - node==bitter-thunder-58
 
-  postgres:
-    stateful: true
-    image: mdillon/postgis:9.5
+
+  elasticsearch_master:
+    mem_limit: 5000m
+    image: 'terranodo/elasticsearch' 
+    environment:
+      ES_JAVA_OPTS: "-Xms3g -Xmx3g"
+      KONTENA_LB_INTERNAL_PORT: 9200
+      KONTENA_LB_VIRTUAL_PATH: /_elastic/
+    command: elasticsearch -E discovery.zen.minimum_master_nodes=2
+    links:
+      - loadbalancer    
     affinity:
       - node==bitter-thunder-58
 
-  elasticsearch:
-    stateful: true
-    image: terranodo/elasticsearch
+
+  elasticsearch_slave_1:
+    mem_limit: 5000m
+    image: 'terranodo/elasticsearch'
     environment:
-      KONTENA_LB_INTERNAL_PORT: 9200
-      KONTENA_LB_VIRTUAL_PATH: /_elastic/
+      ES_JAVA_OPTS: "-Xms3g -Xmx3g"
+    command: elasticsearch -E discovery.zen.ping.unicast.hosts=${project}-elasticsearch_master
     links:
-      - loadbalancer
+      - elasticsearch_master
     affinity:
       - node==bitter-thunder-58
 
@@ -34,7 +43,7 @@ services:
     instances: 3
     image: ninjalikeme/registry
     environment:
-      REGISTRY_SEARCH_URL: http://${project}-elasticsearch:9200/
+      REGISTRY_SEARCH_URL: ${project}-elasticsearch_master:9200/
       REGISTRY_DATABASE_URL: postgres://postgres:postgres@${project}-postgres:5432/postgres
       KONTENA_LB_INTERNAL_PORT: 8000
       KONTENA_LB_VIRTUAL_PATH: /
@@ -55,13 +64,13 @@ services:
     affinity:
       - node==bitter-thunder-58
 
-  maploom:
-    image: 'ninjalikeme/maploom:kontena'
-    command: 'grunt serve'
-    environment:
-      KONTENA_LB_INTERNAL_PORT: 3000
-      KONTENA_LB_VIRTUAL_PATH: /_maploom/
-    links:
-      - loadbalancer
-    affinity:
-      - node==bitter-thunder-58    
+  # maploom:
+  #   image: 'ninjalikeme/maploom:kontena'
+  #   command: 'grunt serve'
+  #   environment:
+  #     KONTENA_LB_INTERNAL_PORT: 3000
+  #     KONTENA_LB_VIRTUAL_PATH: /_maploom/
+  #   links:
+  #     - loadbalancer
+  #   affinity:
+  #     - node==bitter-thunder-58    
