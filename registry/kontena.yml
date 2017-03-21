@@ -6,15 +6,21 @@ services:
   loadbalancer:
     image: kontena/lb:latest
     environment:
-      KONTENA_LB_VIRTUAL_HOSTS: registry.terranodo.io
+      KONTENA_LB_VIRTUAL_HOSTS: registry.cientifi.io
     ports:
       - 80:80
       - 443:443
     affinity:
       - node==bitter-thunder-58
 
+  postgres:
+    stateful: true
+    image: mdillon/postgis:9.5
+    affinity:
+      - node==bitter-thunder-58
 
   elasticsearch_master:
+    stateful: true
     mem_limit: 5000m
     image: 'terranodo/elasticsearch' 
     environment:
@@ -27,8 +33,8 @@ services:
     affinity:
       - node==bitter-thunder-58
 
-
   elasticsearch_slave_1:
+    stateful: true
     mem_limit: 5000m
     image: 'terranodo/elasticsearch'
     environment:
@@ -64,13 +70,13 @@ services:
     affinity:
       - node==bitter-thunder-58
 
-  # maploom:
-  #   image: 'ninjalikeme/maploom:kontena'
-  #   command: 'grunt serve'
-  #   environment:
-  #     KONTENA_LB_INTERNAL_PORT: 3000
-  #     KONTENA_LB_VIRTUAL_PATH: /_maploom/
-  #   links:
-  #     - loadbalancer
-  #   affinity:
-  #     - node==bitter-thunder-58    
+  maploom:
+    image: 'ninjalikeme/maploom:kontena'
+    command: 'grunt serve'
+    environment:
+      KONTENA_LB_INTERNAL_PORT: 3000
+      KONTENA_LB_VIRTUAL_PATH: /_maploom/
+    links:
+      - loadbalancer
+    affinity:
+      - node==bitter-thunder-58
